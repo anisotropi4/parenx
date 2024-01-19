@@ -2,85 +2,61 @@
 """simplify.py: simplify GeoJSON network to GeoPKG layers using Voronoi polygons"""
 
 import argparse
-import datetime as dt
 from functools import partial
 
 import geopandas as gp
 import numpy as np
 import pandas as pd
-from pyogrio import read_dataframe, write_dataframe
-from shapely import box, get_coordinates, line_merge, set_precision, unary_union
-from shapely.geometry import LineString, MultiLineString, MultiPoint, Point
+from pyogrio import write_dataframe
+from shapely import box, get_coordinates, unary_union
+from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import voronoi_diagram
 
+from shared import (
+    combine_line,
+    get_base_geojson,
+    get_geometry_buffer,
+    get_nx,
+    get_source_target,
+    log,
+    set_precision_pointone,
+)
+
 pd.set_option("display.max_columns", None)
-START = dt.datetime.now()
 CRS = "EPSG:27700"
 
-set_precision_pointone = partial(set_precision, grid_size=0.1)
 
-
-def combine_line(line):
-    """combine_line: return LineString GeoSeries combining lines with intersecting endpoints
-
-    args:
-      line: mixed LineString GeoSeries
-
+def get_args():
+    """get_args: get command line parameters
     returns:
-      join LineString GeoSeries
-
+      parameter dict
     """
-    r = MultiLineString(line.values)
-    return gp.GeoSeries(line_merge(r).geoms, crs=CRS)
-
-
-def get_base_geojson(filepath):
-    """get_base_nx: return GeoDataFrame at 0.1m precision from GeoJSON
-
-    args:
-      filepath: GeoJSON path
-
-    returns:
-      GeoDataFrame at 0.1m precision
-
-    """
-    r = read_dataframe(filepath).to_crs(CRS)
-    r["geometry"] = r["geometry"].map(set_precision_pointone)
-    return r
-
-
-def get_end(geometry):
-    """get_end: return numpy array of geometry LineString end-points
-
-    args:
-      geometry: geometry LineString
-
-    returns:
-      end-point numpy arrays
-
-    """
-    r = get_coordinates(geometry)
-    return np.vstack((r[0, :], r[-1, :]))
-
-
-def get_geometry_buffer(this_gf, radius=8.0):
-    """get_geometry_buffer: return radius buffered GeoDataFrame
-
-    args:
-      this_gf: GeoDataFrame to
-      radius: (default value = 8.0)
-
-    returns:
-      buffered GeoSeries geometry
-
-    """
-    r = gp.GeoSeries(this_gf, crs=CRS).buffer(radius, join_style="mitre")
-    union = unary_union(r)
-    try:
-        r = gp.GeoSeries(union.geoms, crs=CRS)
-    except AttributeError:
-        r = gp.GeoSeries(union, crs=CRS)
-    return r
+    parser = argparse.ArgumentParser(
+        description="GeoJSON network Voronoi simplification"
+    )
+    parser.add_argument("inpath", type=str, help="GeoJSON filepath to simplify")
+    parser.add_argument(
+        "outpath",
+        nargs="?",
+        type=str,
+        help="GeoGPKG output path",
+        default="output.gpkg",
+    )
+    parser.add_argument("--simplify", help="tolerance [m]", type=float, default=0.0)
+    parser.add_argument("--scale", help="Voronoi scale", type=float, default=5.0)
+    parser.add_argument("--buffer", help="line buffer [m]", type=float, default=8.0)
+    parser.add_argument(
+        "--tolerance", help="Voronoi snap distance", type=float, default=1.0
+    )
+    args = parser.parse_args()
+    return {
+        "inpath": args.inpath,
+        "outpath": args.outpath,
+        "simplify": args.simplify,
+        "buffer": args.buffer,
+        "scale": args.scale,
+        "tolerance": args.tolerance,
+    }
 
 
 def get_linestring(line):
@@ -97,24 +73,6 @@ def get_linestring(line):
     return gp.GeoSeries(pd.DataFrame(r.T).apply(LineString, axis=1), crs=CRS).values
 
 
-def get_nx(line):
-    """get_nx: return primal edge network from LineString GeoDataFrame
-
-    args:
-      line: LineString GeoDataFrame
-
-    returns:
-      edge GeoDataFrames
-
-    """
-    r = line.map(get_end)
-    edge = gp.GeoSeries(r.map(LineString), crs=CRS)
-    r = np.vstack(r.to_numpy())
-    r = gp.GeoSeries(map(Point, r)).to_frame("geometry")
-    r = r.groupby(r.columns.to_list(), as_index=False).size()
-    return edge
-
-
 def get_segment(line, distance=50.0):
     """get_segment: segment LineString GeoSeries into distance length segments
 
@@ -127,44 +85,6 @@ def get_segment(line, distance=50.0):
 
     """
     return get_linestring(line.segmentize(distance))
-
-
-def get_source_target(line):
-    """get_source_target: return edge and node GeoDataFrames from LineString with unique
-    node Point and edge source and target
-
-    args:
-      line: LineString GeoDataFrame
-
-    returns:
-      edge, node: GeoDataFrames
-
-    """
-    edge = line.copy()
-    r = edge["geometry"].map(get_end)
-    r = np.stack(r)
-    node = gp.GeoSeries(map(Point, r.reshape(-1, 2)), crs=CRS).to_frame("geometry")
-    count = node.groupby("geometry").size().rename("count")
-    node = node.drop_duplicates("geometry").set_index("geometry", drop=False)
-    node = node.join(count).reset_index(drop=True).reset_index(names="node")
-    ix = node.set_index("geometry")["node"]
-    edge = edge.reset_index(names="edge")
-    edge["source"] = ix.loc[map(Point, r[:, 0])].values
-    edge["target"] = ix.loc[map(Point, r[:, 1])].values
-    return edge, node
-
-
-def log(this_string):
-    """log: print timestamp appended to 'this_string'
-
-      this_string: text to print
-
-    returns:
-      None
-
-    """
-    now = dt.datetime.now() - START
-    print(this_string + f"\t{now}")
 
 
 def get_segment_nx(line, scale):
@@ -298,14 +218,14 @@ def get_voronoi_line(voronoi, boundary, geometry, buffer_size):
     return combine_line(r)
 
 
-def main(inpath, outpath, parameter):
+def main():
     """main: load GeoJSON file, use Voronoi polygons to simplify network, and output
     the input, simplified and primal network as GeoPKG layers
 
     args:
-      inpath:      filepath to input GeoJSON file
-      outpath:     filepath to output GeoPKG file
       parameter:
+        inpath:      filepath to input GeoJSON file
+        outpath:     filepath to output GeoPKG file
         simplify:    simplify tolerance [m]
         buffer:      network buffer distance [m]
         scale:       scale distance between edge point to form Voronoi
@@ -316,8 +236,10 @@ def main(inpath, outpath, parameter):
 
     """
     log("start\t")
-    base_nx = get_base_geojson(inpath)
+    parameter = get_args()
+    base_nx = get_base_geojson(parameter["inpath"])
     log("read geojson")
+    outpath = parameter["outpath"]
     write_dataframe(base_nx, outpath, layer="input")
     log("process\t")
     radius = parameter["buffer"]
@@ -338,32 +260,4 @@ def main(inpath, outpath, parameter):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="GeoJSON network Voronoi simplification"
-    )
-    parser.add_argument("inpath", type=str, help="GeoJSON filepath to simplify")
-    parser.add_argument(
-        "outpath",
-        nargs="?",
-        type=str,
-        help="GeoGPKG output path",
-        default="output.gpkg",
-    )
-    parser.add_argument("--simplify", help="tolerance [m]", type=float, default=0.0)
-    parser.add_argument("--scale", help="Voronoi scale", type=float, default=5.0)
-    parser.add_argument("--buffer", help="line buffer [m]", type=float, default=8.0)
-    parser.add_argument(
-        "--tolerance", help="Voronoi snap distance", type=float, default=1.0
-    )
-    args = parser.parse_args()
-    main_parameter = {
-        "simplify": args.simplify,
-        "buffer": args.buffer,
-        "scale": args.scale,
-        "tolerance": args.tolerance,
-    }
-    main(
-        args.inpath,
-        args.outpath,
-        main_parameter,
-    )
+    main()

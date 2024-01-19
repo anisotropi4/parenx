@@ -33,10 +33,10 @@ done
 echo skeletonize ${INPATH}
 ./skeletonize.py ${INPATH} sk-${OUTPUT}.gpkg
 ./skeletonize.py ${INPATH} sk-${OUTPUT}-simple.gpkg --simplify 1.0
+./skeletonize.py ${INPATH} sk-${OUTPUT}-segment.gpkg --segment
 echo voronoi ${INPATH}
 ./voronoi.py ${INPATH} vr-${OUTPUT}.gpkg
 ./voronoi.py ${INPATH} vr-${OUTPUT}-simple.gpkg --simplify 1.0
-
 OGR2OGR=$(which ogr2ogr)
 
 if [ x"${OGR2OGR}" != x ]; then
