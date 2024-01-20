@@ -12,7 +12,7 @@ from shapely import box, get_coordinates, unary_union
 from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import voronoi_diagram
 
-from shared import (
+from .shared import (
     combine_line,
     get_base_geojson,
     get_geometry_buffer,
@@ -235,8 +235,8 @@ def main():
       None
 
     """
-    log("start\t")
     parameter = get_args()
+    log("start\t")
     base_nx = get_base_geojson(parameter["inpath"])
     log("read geojson")
     outpath = parameter["outpath"]

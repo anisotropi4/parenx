@@ -1,33 +1,44 @@
-# parenx
-Simplify or "pare" GeoJSON networks ("nx") using raster image skeletonization and Voronoi polygons
+# parex
+Simplify (or "pare") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
 
-Use image-skeletonization or Voronoi polygons to simplify network, and output GeoPKG layers corresponding to the input, simplified and primal network. Where a primal network only contains straight line segments
+This uses image skeletonization or Voronoi polygons to simplify network, and output GeoPKG layers corresponding to the input, simplified and primal network. Where a primal network only contains straight line segments
 
-The sample data set is of Queenstreet in Edinburgh kindly shared by Robin Lovelace
+The sample data set is of the Princes Street in Edinburgh, kindly shared by Robin Lovelace
 
-## Skeletonization
-In an activated virtual environment, the following creates a simplified network by applying skeletonization to a buffered raster array
+## Installation
+To install the following will install the project into an activated `python` virtual environment:
+
+    (venv) $ pip install parenx
+
+This places the `skeletonization.py` and `voronoi.py` scripts into the executable search path
+
+## Examples
+A `bash` helper script `run.sh` and example data is available under the `sitepackage` project directory under `venv`. The exact path varies with module and `python` version
+
+### Skeletonization
+The following creates a simplified network by applying skeletonization to a buffered raster array in `output.gpkg`
     
     (venv) $ ./skeletonize.py data/rnet_princes_street.geojson
    
-## Voronoi
-In an activated virtual environment, the following creates a simplified network by creating set of Voronoi polygons from points on the buffer
+### Voronoi
+The following creates a simplified network by creating set of Voronoi polygons from points on the buffer in `output.gpkg`
    
     (venv) $ ./voronoi.py data/rnet_princes_street.geojson
 
-## Simple operation
-Setup a python virtual environment and executes the `skeletonize.py` script against a data file in the `data` directory
+### Simple operation
+The `run.sh` script sets a python virtual environment and executes the script against a data file in the `data` directory
 
-    $ ./skeletonize.py data/rnet_3km_buffer.geojson sk-3km_buffer.gpkg
+    $ ./run.sh
 
-Setup a python virtual environment and executes the `voronoi.py` script against a data file in the `data` directory
+The `run.sh` script optionally takes a filename and file-extension. To simplify a file, say `somewhere.geojson` and output to `GeoPKG` files `sk-simple.gpkg` and `vr-simple.gpkg`
+    
+    $ ./run.sh somewhere.geojon simple
 
-    $ ./voronoi.py data/rnet_3km_buffer.geojson vr-3km_buffer.gpkg
-    
-    
-The `run.sh` script optionally takes a filename and file-extension. To simplify a file, say `somewhere.geojson` and output to `GeoPKG` files `sk-thing.gpkg` and `vr-thing.gpkg`
-    
-    $ ./run.sh somewhere.geojon thing
+### Locating the `run.sh` script
+To copy the `run.sh` script into your local directory the following could help
+
+    $ find . -name run.sh -exec cp {} . \;
+
 
 ## Notes
 Both are the skeletonization and Voronoi approach are generic approaches, with the following known issues:
@@ -35,3 +46,4 @@ Both are the skeletonization and Voronoi approach are generic approaches, with t
 * This does not maintain a link between attributes and the simplified network
 * This does not identify a subset of edges that need simplification
 * The lines are a bit wobbly
+* It is quite slow

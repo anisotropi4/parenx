@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 
-INPATH=${1:-"data/rnet_princes_street.geojson"}
-OUTPUT=${2:-"output"}
-
-echo simplify ${INPATH}
-
 if [ ! -d venv ]; then
     python3 -m venv venv
     source venv/bin/activate
     pip install --upgrade pip
     pip install --upgrade wheel
-    if [ -s requirements.txt ]; then
-        pip install --upgrade -r requirements.txt | tee setup.txt
-    fi
+    pip install parenx
 fi
+
+source venv/bin/activate
+
+LIBPATH=$(find . -name data | fgrep parenx)
+INPATH=${1:-"${LIBPATH}/rnet_princes_street.geojson"}
+OUTPUT=${2:-"output"}
+
+echo simplify ${INPATH}
 
 if [ ! -d archive ]; then
     mkdir archive
 fi
-source venv/bin/activate
 
 for k in sk vr
 do
@@ -31,12 +31,12 @@ do
 done
 
 echo skeletonize ${INPATH}
-./skeletonize.py ${INPATH} sk-${OUTPUT}.gpkg
-./skeletonize.py ${INPATH} sk-${OUTPUT}-simple.gpkg --simplify 1.0
-./skeletonize.py ${INPATH} sk-${OUTPUT}-segment.gpkg --segment
+skeletonize.py ${INPATH} sk-${OUTPUT}.gpkg
+skeletonize.py ${INPATH} sk-${OUTPUT}-simple.gpkg --simplify 1.0
+skeletonize.py ${INPATH} sk-${OUTPUT}-segment.gpkg --segment
 echo voronoi ${INPATH}
-./voronoi.py ${INPATH} vr-${OUTPUT}.gpkg
-./voronoi.py ${INPATH} vr-${OUTPUT}-simple.gpkg --simplify 1.0
+voronoi.py ${INPATH} vr-${OUTPUT}.gpkg
+voronoi.py ${INPATH} vr-${OUTPUT}-simple.gpkg --simplify 1.0
 OGR2OGR=$(which ogr2ogr)
 
 if [ x"${OGR2OGR}" != x ]; then
