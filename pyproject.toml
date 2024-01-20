@@ -1,0 +1,37 @@
+[project]
+name = "parenx_anisotropi4"
+version = "0.4.7"
+authors = [
+  { name="Will Deakin", email="will.deakin@crinstitute.org.uk" },
+]
+description = "GeoJSON network simplification using raster image skeletonization and Voronoi polygons"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "geopandas",
+  "pyogrio",
+  "rasterio",
+  "shapely",
+  "scikit-image"
+]
+[project.scripts]
+"skeletonize.py" = "parenx.skeletonize:main"
+"voronoi.py" = "parenx.voronoi:main"
+[project.urls]
+Homepage = "https://github.com/anisotropi4/parenx"
+Issues = "https://github.com/anisotropi4/parenx/issues"
+[build-system]
+requires = [
+  "setuptools>=61.0"
+]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+where = ["src"]
+[tool.setuptools.package-data]
+"parenx_anisotropi4" = ["data/*.geojson", "run.sh"]
