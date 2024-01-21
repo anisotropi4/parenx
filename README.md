@@ -1,5 +1,6 @@
 # parex
-Simplify (or "pare") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
+
+Simplify (or "[pare](https://dictionary.cambridge.org/dictionary/english/pare)") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
 
 This uses image skeletonization or Voronoi polygons to simplify network, and output GeoPKG layers corresponding to the input, simplified and primal network. Where a primal network only contains straight line segments
 
