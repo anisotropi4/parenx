@@ -27,8 +27,10 @@ def combine_line(line):
 
     """
     r = MultiLineString(line.values)
-    return gp.GeoSeries(line_merge(r).geoms, crs=CRS)
-
+    try:
+        return gp.GeoSeries(line_merge(r).geoms, crs=CRS)
+    except AttributeError:
+        return gp.GeoSeries(line_merge(r), crs=CRS)
 
 def get_base_geojson(filepath):
     """get_base_nx: return GeoDataFrame at 0.1m precision from GeoJSON
@@ -70,7 +72,10 @@ def get_geometry_buffer(this_gf, radius=8.0):
       buffered GeoSeries geometry
 
     """
-    r = gp.GeoSeries(unary_union(this_gf).geoms, crs=CRS)
+    try:
+        r = gp.GeoSeries(unary_union(this_gf).geoms, crs=CRS)
+    except AttributeError:
+        r = gp.GeoSeries(this_gf, crs=CRS)
     r = gp.GeoSeries(r, crs=CRS).buffer(radius, join_style="mitre")
     union = unary_union(r)
     try:

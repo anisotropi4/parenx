@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""simplify.py: simplify GeoJSON network to GeoPKG layers using image skeletonization"""
+"""skeletonize.py: simplify GeoJSON network to GeoPKG layers using image skeletonization"""
 
 import argparse
 import warnings
@@ -18,7 +18,7 @@ from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import split
 from skimage.morphology import remove_small_holes, skeletonize
 
-from .shared import (
+from shared import (
     combine_line,
     get_base_geojson,
     get_geometry_buffer,
@@ -115,17 +115,15 @@ def get_raster_point(raster, value=1):
     return gp.GeoSeries(map(Point, r.T), crs=CRS)
 
 
-def nx_out(this_gf, transform, filepath, layer, simplify=0.0):
-    """nx_out: write transform GeoPandas data to GeoPKG layer
+def sx_to_nx(this_gf, transform, simplify=0.0):
+    """sx_to_nx: transform GeoPandas data from raster to projected coordinates
 
     args:
-      this_gf: GeoDataFrame to output
+      this_gf: GeoDataFrame raster coordinates
       transform: affine transform
-      filepath: GeoPKG filepath
-      layer: layer name
 
     returns:
-      None
+      GeoDataFrame in projected coordinates
 
     """
     r = this_gf.copy()
@@ -137,7 +135,7 @@ def nx_out(this_gf, transform, filepath, layer, simplify=0.0):
     if simplify > 0.0:
         geometry = geometry.simplify(simplify)
     r["geometry"] = geometry
-    write_dataframe(r, filepath, layer=layer)
+    return r
 
 
 def get_skeleton(geometry, transform, shape):
@@ -218,6 +216,8 @@ def get_raster_line(point, knot=False):
         return combine_line(edge["geometry"])
     ix = edge.length > 2.0
     connected = get_connected_class(edge.loc[~ix, ["source", "target"]])
+    if connected.empty:
+        return gp.GeoSeries(LineString([]), crs=CRS)
     node = node.loc[connected.index].join(connected).sort_index()
     connected_edge = get_centre_edge(node)
     r = combine_line(pd.concat([connected_edge["geometry"], edge.loc[ix, "geometry"]]))
@@ -284,8 +284,8 @@ def main():
        None
 
     """
-    parameter = get_args()
     log("start\t")
+    parameter = get_args()
     base_nx = get_base_geojson(parameter["inpath"])
     log("read geojson")
     outpath = parameter["outpath"]
@@ -300,14 +300,16 @@ def main():
     r_matrix, s_matrix, out_shape = get_affine_transform(nx_geometry, scale)
     shapely_transform = partial(affine_transform, matrix=s_matrix)
     skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape)
-    nx_point = get_raster_point(skeleton_im)
-    nx_line = get_raster_line(nx_point, parameter["knot"])
+    sx_point = get_raster_point(skeleton_im)
+    sx_line = get_raster_line(sx_point, parameter["knot"])
     log("write simple")
     tolerance = parameter["tolerance"]
-    nx_out(nx_line, shapely_transform, outpath, "line", simplify=tolerance)
+    nx_line = sx_to_nx(sx_line, shapely_transform, simplify=tolerance)
+    write_dataframe(nx_line, outpath, "line")
     log("write primal")
     nx_line = get_nx(nx_line)
-    nx_out(nx_line, shapely_transform, outpath, "primal", simplify=tolerance)
+    line_mx = sx_to_nx(nx_line, shapely_transform, simplify=tolerance)
+    write_dataframe(line_mx, outpath, "primal")
     log("stop\t")
 
 
