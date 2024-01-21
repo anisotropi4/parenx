@@ -18,7 +18,7 @@ from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import split
 from skimage.morphology import remove_small_holes, skeletonize
 
-from shared import (
+from .shared import (
     combine_line,
     get_base_geojson,
     get_geometry_buffer,
@@ -211,13 +211,15 @@ def get_raster_line(point, knot=False):
     s = s.loc[np.where(s[0] != s[1])]
     s = np.stack([point[s[0].values], point[s[1].values]]).T
     r = gp.GeoSeries(map(LineString, s), crs=CRS)
+    if r.empty:
+        return gp.GeoSeries(LineString([]))
     edge, node = get_source_target(combine_line(r).to_frame("geometry"))
     if knot:
         return combine_line(edge["geometry"])
     ix = edge.length > 2.0
     connected = get_connected_class(edge.loc[~ix, ["source", "target"]])
     if connected.empty:
-        return gp.GeoSeries(LineString([]), crs=CRS)
+        return edge.loc[ix, "geometry"]
     node = node.loc[connected.index].join(connected).sort_index()
     connected_edge = get_centre_edge(node)
     r = combine_line(pd.concat([connected_edge["geometry"], edge.loc[ix, "geometry"]]))
@@ -270,6 +272,23 @@ def get_segment_buffer(this_gf, radius):
     return r
 
 
+def skeletonize_frame(this_gs, parameter):
+    """skeltonize_frame:"""
+    radius = parameter["buffer"]
+    scale = parameter["scale"]
+    if parameter["segment"]:
+        nx_geometry = get_segment_buffer(this_gs, radius=radius)
+    else:
+        nx_geometry = get_geometry_buffer(this_gs, radius=radius)
+    r_matrix, s_matrix, out_shape = get_affine_transform(nx_geometry, scale)
+    shapely_transform = partial(affine_transform, matrix=s_matrix)
+    skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape)
+    nx_point = get_raster_point(skeleton_im)
+    sx_line = get_raster_line(nx_point, parameter["knot"])
+    tolerance = parameter["tolerance"]
+    return sx_to_nx(sx_line, shapely_transform, simplify=tolerance)
+
+
 set_precision_pointone = partial(set_precision, grid_size=0.1)
 
 
@@ -291,25 +310,12 @@ def main():
     outpath = parameter["outpath"]
     write_dataframe(base_nx, outpath, layer="input")
     log("process\t")
-    radius = parameter["buffer"]
-    scale = parameter["scale"]
-    if parameter["segment"]:
-        nx_geometry = get_segment_buffer(base_nx["geometry"], radius=radius)
-    else:
-        nx_geometry = get_geometry_buffer(base_nx["geometry"], radius=radius)
-    r_matrix, s_matrix, out_shape = get_affine_transform(nx_geometry, scale)
-    shapely_transform = partial(affine_transform, matrix=s_matrix)
-    skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape)
-    sx_point = get_raster_point(skeleton_im)
-    sx_line = get_raster_line(sx_point, parameter["knot"])
+    nx_line = skeletonize_frame(base_nx["geometry"], parameter)
     log("write simple")
-    tolerance = parameter["tolerance"]
-    nx_line = sx_to_nx(sx_line, shapely_transform, simplify=tolerance)
     write_dataframe(nx_line, outpath, "line")
     log("write primal")
-    nx_line = get_nx(nx_line)
-    line_mx = sx_to_nx(nx_line, shapely_transform, simplify=tolerance)
-    write_dataframe(line_mx, outpath, "primal")
+    mx_line = get_nx(nx_line["geometry"]).to_frame("geometry")
+    write_dataframe(mx_line, outpath, "primal")
     log("stop\t")
 
 

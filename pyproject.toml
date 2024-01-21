@@ -1,6 +1,6 @@
 [project]
 name = "parenx"
-version = "0.4.9"
+version = "0.5.1"
 authors = [
   { name="Will Deakin", email="will.deakin@crinstitute.org.uk" },
 ]
