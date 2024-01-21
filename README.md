@@ -1,29 +1,72 @@
 # parex
-Simplify (or "pare") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
 
-This uses image skeletonization or Voronoi polygons to simplify network, and output GeoPKG layers corresponding to the input, simplified and primal network. Where a primal network only contains straight line segments
+Simplify (or "[pare](https://dictionary.cambridge.org/dictionary/english/pare)") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
 
-The sample data set is of the Princes Street in Edinburgh, kindly shared by Robin Lovelace
+Provides functions that use image skeletonization or Voronoi polygons to simplify geographic networks composed of linestrings. The outputs are geographic layers representing simplified or 'primal' representations of the network. Primal networks only contains straight line segments
+
+Sample datasets include:
+
+- Princes Street in Edinburgh, in [data/rnet_princes_street.geojson](https://github.com/anisotropi4/parenx/blob/main/data/rnet_princes_street.geojson)
+- Rail lines in Doncaster, in [data/rnet_doncaster_rail.geojson](https://github.com/anisotropi4/parenx/blob/main/data/rnet_doncaster_rail.geojson)
+<!-- Todo: add more -->
 
 ## Installation
-To install the following will install the project into an activated `python` virtual environment:
 
-    (venv) $ pip install parenx
+Install the package into an activated `python` virtual environment with the following command:
 
-This places the `skeletonization.py` and `voronoi.py` scripts into the executable search path
+```bash
+pip install parenx
+```
+
+Install the latest development version from GitHub with the following command:
+
+```bash
+pip install git+https://github.com/anisotropi4/parenx.git
+```
+
+This places the `skeletonization.py` and `voronoi.py` scripts into the executable search path.
+
+Test to see if the package is installed with the following command:
+
+```bash
+python -c "import parenx; print(parenx.__version__)"
+```
 
 ## Examples
+
 A `bash` helper script `run.sh` and example data is available under the `sitepackage` project directory under `venv`. The exact path varies with module and `python` version
 
 ### Skeletonization
 The following creates a simplified network by applying skeletonization to a buffered raster array in `output.gpkg`
-    
+<!--     
     (venv) $ ./skeletonize.py data/rnet_princes_street.geojson
-   
+    -->
+
+```bash
+# Download the data if not already present
+if [ ! -f ./data/rnet_princes_street.geojson ]; then
+    wget https://raw.githubusercontent.com/anisotropi4/parenx/main/data/rnet_princes_street.geojson
+    # Create data folder if not already present
+    if [ ! -d ./data ]; then
+        mkdir ./data
+    fi
+    mv rnet_princes_street.geojson ./data
+fi
+```
+
+```bash
+skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletonized.gpkg
+```
+
+
 ### Voronoi
 The following creates a simplified network by creating set of Voronoi polygons from points on the buffer in `output.gpkg`
-   
-    (venv) $ ./voronoi.py data/rnet_princes_street.geojson
+<!--    
+    (venv) $ ./voronoi.py data/rnet_princes_street.geojson -->
+
+```bash
+voronoi.py ./data/rnet_princes_street.geojson rnet_princes_street_voronoi.gpkg
+```
 
 ### Simple operation
 The `run.sh` script sets a python virtual environment and executes the script against a data file in the `data` directory
