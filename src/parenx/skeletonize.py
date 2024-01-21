@@ -244,30 +244,37 @@ def split_centres(line, offset):
     return centre
 
 
-def get_segment_buffer(this_gf, radius):
+def get_segment_buffer(this_gs, radius):
     """get_segment:"""
-    r = this_gf.to_frame("geometry")
-    r = gp.GeoSeries(unary_union(r).geoms, crs=CRS).to_frame("geometry")
+    r = this_gs.to_frame("geometry")
+    try:
+        r = gp.GeoSeries(unary_union(this_gs).geoms, crs=CRS)
+    except AttributeError:
+        r = gp.GeoSeries(this_gs, crs=CRS)
+    r = r.to_frame("geometry").reset_index(drop=True)
     split_centre = partial(split_centres, offset=np.sqrt(1.5) * radius)
-    s = gp.GeoSeries(this_gf.map(split_centre), crs=CRS)
+    s = gp.GeoSeries(this_gs.map(split_centre), crs=CRS)
     s = s.buffer(radius, 0, join_style="round", cap_style="round")
-    s = gp.GeoSeries(unary_union(s.values).geoms, crs=CRS)
-    i, j = this_gf.sindex.query(s, predicate="intersects")
+    try:
+        s = gp.GeoSeries(unary_union(s.values).geoms, crs=CRS)
+    except AttributeError:
+        s = gp.GeoSeries(unary_union(s.values), crs=CRS)
+    i, j = this_gs.sindex.query(s, predicate="intersects")
     r["class"] = -1
     r.loc[j, "class"] = s.index[i]
     count = r.groupby("class").count()
     r = r.join(count["geometry"].rename("count"), on="class")
     ix = r["class"] == -1
     r.loc[ix, "count"] = 0
-    ix = r["count"].isin([0, 1])
-    p = this_gf[~ix]
+    ix = r["count"].isin([0, 1]).values
+    p = this_gs[~ix]
     p = gp.GeoSeries(unary_union(p).geoms, crs=CRS)
     p = p.buffer(radius, join_style="round", cap_style="round")
     try:
         p = gp.GeoSeries(unary_union(p.values).geoms, crs=CRS)
     except AttributeError:
         p = gp.GeoSeries(unary_union(p.values), crs=CRS)
-    q = this_gf[ix].buffer(0.612, 64, join_style="mitre", cap_style="round")
+    q = this_gs[ix].buffer(0.612, 64, join_style="mitre", cap_style="round")
     r = pd.concat([p, q])
     return r
 
