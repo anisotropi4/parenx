@@ -18,7 +18,7 @@ from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import split
 from skimage.morphology import remove_small_holes, skeletonize
 
-from shared import (
+from .shared import (
     combine_line,
     get_base_geojson,
     get_geometry_buffer,
