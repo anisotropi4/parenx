@@ -1,4 +1,4 @@
-# parex
+# parenx
 
 Simplify (or "[pare](https://dictionary.cambridge.org/dictionary/english/pare)") a GeoJSON network ("nx") using raster image skeletonization an Voronoi polygons
 
