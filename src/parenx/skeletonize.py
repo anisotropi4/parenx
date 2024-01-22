@@ -12,13 +12,13 @@ import pandas as pd
 import rasterio as rio
 import rasterio.features as rif
 from pyogrio import write_dataframe
-from shapely import line_interpolate_point, set_precision, snap, unary_union
+from shapely import line_interpolate_point, set_precision, snap
 from shapely.affinity import affine_transform
 from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import split
 from skimage.morphology import remove_small_holes, skeletonize
 
-from .shared import (
+from shared import (
     combine_line,
     get_base_geojson,
     get_geometry_buffer,
@@ -138,7 +138,7 @@ def sx_to_nx(this_gf, transform, simplify=0.0):
     return r
 
 
-def get_skeleton(geometry, transform, shape):
+def get_skeleton(geometry, transform, shape, scale):
     """get_skeleton: return skeletonized raster buffer from Shapely geometry
 
     args:
@@ -154,7 +154,7 @@ def get_skeleton(geometry, transform, shape):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # parent, traverse = max_tree(invert(r))
-        r = remove_small_holes(r, 4).astype(np.uint8)
+        r = remove_small_holes(r, 16 * scale).astype(np.uint8)
     return skeletonize(r).astype(np.uint8)
 
 
@@ -212,7 +212,7 @@ def get_raster_line(point, knot=False):
     s = np.stack([point[s[0].values], point[s[1].values]]).T
     r = gp.GeoSeries(map(LineString, s), crs=CRS)
     if r.empty:
-        return gp.GeoSeries(LineString([]))
+        return gp.GeoSeries(EMPTY, crs=CRS)
     edge, node = get_source_target(combine_line(r).to_frame("geometry"))
     if knot:
         return combine_line(edge["geometry"])
@@ -248,18 +248,20 @@ def get_segment_buffer(this_gs, radius):
     """get_segment:"""
     r = this_gs.to_frame("geometry")
     try:
-        r = gp.GeoSeries(unary_union(this_gs).geoms, crs=CRS)
+        r = gp.GeoSeries(this_gs.unary_union.geoms, crs=CRS)
     except AttributeError:
         r = gp.GeoSeries(this_gs, crs=CRS)
     r = r.to_frame("geometry").reset_index(drop=True)
     split_centre = partial(split_centres, offset=np.sqrt(1.5) * radius)
     s = gp.GeoSeries(this_gs.map(split_centre), crs=CRS)
     s = s.buffer(radius, 0, join_style="round", cap_style="round")
+    ix = s.is_empty.values
+    s = s[~ix].reset_index(drop=True)
     try:
-        s = gp.GeoSeries(unary_union(s.values).geoms, crs=CRS)
+        s = gp.GeoSeries(s.unary_union.geoms, crs=CRS)
     except AttributeError:
-        s = gp.GeoSeries(unary_union(s.values), crs=CRS)
-    i, j = this_gs.sindex.query(s, predicate="intersects")
+        s = gp.GeoSeries(s.unary_union, crs=CRS)
+    i, j = r.sindex.query(s, predicate="intersects")
     r["class"] = -1
     r.loc[j, "class"] = s.index[i]
     count = r.groupby("class").count()
@@ -267,14 +269,16 @@ def get_segment_buffer(this_gs, radius):
     ix = r["class"] == -1
     r.loc[ix, "count"] = 0
     ix = r["count"].isin([0, 1]).values
-    p = this_gs[~ix]
-    p = gp.GeoSeries(unary_union(p).geoms, crs=CRS)
+    p = r[~ix]
+    q = r[ix].buffer(0.612, 64, join_style="mitre", cap_style="round")
+    if p.is_empty.all():
+        return q
+    p = gp.GeoSeries(p.unary_union.geoms, crs=CRS)
     p = p.buffer(radius, join_style="round", cap_style="round")
     try:
-        p = gp.GeoSeries(unary_union(p.values).geoms, crs=CRS)
+        p = gp.GeoSeries(p.unary_union.geoms, crs=CRS)
     except AttributeError:
-        p = gp.GeoSeries(unary_union(p.values), crs=CRS)
-    q = this_gs[ix].buffer(0.612, 64, join_style="mitre", cap_style="round")
+        p = gp.GeoSeries(p.unary_union, crs=CRS)
     r = pd.concat([p, q])
     return r
 
@@ -289,7 +293,7 @@ def skeletonize_frame(this_gs, parameter):
         nx_geometry = get_geometry_buffer(this_gs, radius=radius)
     r_matrix, s_matrix, out_shape = get_affine_transform(nx_geometry, scale)
     shapely_transform = partial(affine_transform, matrix=s_matrix)
-    skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape)
+    skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape, scale)
     nx_point = get_raster_point(skeleton_im)
     sx_line = get_raster_line(nx_point, parameter["knot"])
     tolerance = parameter["tolerance"]
