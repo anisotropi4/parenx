@@ -14,6 +14,7 @@ from shapely.ops import voronoi_diagram
 
 from .shared import (
     combine_line,
+    CRS,
     get_base_geojson,
     get_geometry_buffer,
     get_nx,
@@ -23,8 +24,6 @@ from .shared import (
 )
 
 pd.set_option("display.max_columns", None)
-CRS = "EPSG:27700"
-
 
 def get_args():
     """get_args: get command line parameters
@@ -235,8 +234,8 @@ def main():
       None
 
     """
-    parameter = get_args()
     log("start\t")
+    parameter = get_args()
     base_nx = get_base_geojson(parameter["inpath"])
     log("read geojson")
     outpath = parameter["outpath"]
