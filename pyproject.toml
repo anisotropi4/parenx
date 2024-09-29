@@ -1,6 +1,6 @@
 [project]
 name = "parenx"
-version = "0.5.6"
+version = "0.6.1"
 authors = [
   { name="Will Deakin", email="will.deakin@crinstitute.org.uk" },
 ]
@@ -22,6 +22,7 @@ dependencies = [
 ]
 [project.scripts]
 "skeletonize.py" = "parenx.skeletonize:main"
+"tile_skeletonize.py" = "parenx.tile_skeletonize:main"
 "voronoi.py" = "parenx.voronoi:main"
 [project.urls]
 Homepage = "https://github.com/anisotropi4/parenx"
