@@ -11,19 +11,19 @@ from pyogrio import write_dataframe
 from shapely import STRtree, box, clip_by_rect, disjoint, voronoi_polygons
 from shapely.geometry import LineString, MultiPoint
 
-from .shared import (
-    combine_line,
+from parenx.skeletonize import skeletonize_frame
+
+from parenx.shared import (
     CRS,
+    combine_line,
     get_base_geojson,
-    get_geometry_buffer,
-    get_nx,
+    get_primal,
     get_source_target,
     log,
 )
 
-from .skeletonize import skeletonize_frame
-
 pd.set_option("display.max_columns", None)
+
 
 def get_args():
     """get_args: get command line parameters
@@ -48,17 +48,7 @@ def get_args():
     parser.add_argument("--scale", help="raster scale", type=float, default=1.0)
     parser.add_argument("--knot", help="keep image knots", action="store_true")
     parser.add_argument("--segment", help="segment", action="store_true")
-    args = parser.parse_args()
-    return {
-        "inpath": args.inpath,
-        "outpath": args.outpath,
-        "tolerance": args.simplify,
-        "buffer": args.buffer,
-        "side_length": args.length,
-        "scale": args.scale,
-        "knot": args.knot,
-        "segment": args.segment,
-    }
+    return vars(parser.parse_args())
 
 
 def get_square(this_gf, side_length=2000.0):
@@ -119,9 +109,24 @@ def get_gap_fill(this_gf, square, radius):
 
 
 def skeletonize_tiles(this_nx, parameter):
-    """tile_skeletonize:"""
+    """tile_skeletonize: use tiled image skeletonization to simplify network
+    with parameters passed as dict key pairs
+
+    args:
+      parameter
+        buffer:      line buffer distance [m]
+        length:      square edge size [m]
+        scale:       raster scale
+        knot:        keep image knots
+        segment:     segment lines
+
+    returns:
+      None
+
+    """
     radius = parameter["buffer"]
-    square = get_square(this_nx, parameter["side_length"])
+    side_length = parameter["length"]
+    square = get_square(this_nx, side_length)
     tile = get_tile_extent(this_nx, square, radius)
     tile = tile.reset_index(drop=True)
     r = []
@@ -143,12 +148,30 @@ def skeletonize_tiles(this_nx, parameter):
     s = get_gap_fill(r, square, radius)
     r = pd.concat([r, s])
     r = combine_line(r["geometry"]).to_frame("geometry")
-    r["geometry"] = r.simplify(parameter["tolerance"])
+    tolerance = parameter["simplify"]
+    r["geometry"] = r.simplify(tolerance)
     return r
 
 
 def main():
-    """main: function"""
+    """main: load GeoJSON file, use tiled skeletonize buffer to simplify network,
+    and output simplified and primal network as GeoPKG layers
+
+    args:
+      parameter
+        inpath:      filepath to input GeoJSON file
+        outpath:     filepath to output GeoPKG file
+        simplify:    tolerance [m]
+        buffer:      line buffer distance [m]
+        length:      square edge size [m]
+        scale:       raster scale
+        knot:        keep image knots
+        segment:     segment lines
+
+    returns:
+      None
+
+    """
     log("start\t")
     parameter = get_args()
     base_nx = get_base_geojson(parameter["inpath"])
@@ -160,7 +183,7 @@ def main():
     log("write simple")
     write_dataframe(nx_line, outpath, "line")
     log("write primal")
-    mx_line = get_nx(nx_line["geometry"]).to_frame("geometry")
+    mx_line = get_primal(nx_line["geometry"]).to_frame("geometry")
     write_dataframe(mx_line, outpath, "primal")
     log("stop\t")
 

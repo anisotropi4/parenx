@@ -31,6 +31,7 @@ def combine_line(line):
     except AttributeError:
         return gp.GeoSeries(line_merge(r), crs=CRS)
 
+
 def get_base_geojson(filepath):
     """get_base_nx: return GeoDataFrame at 0.1m precision from GeoJSON
 
@@ -84,8 +85,8 @@ def get_geometry_buffer(this_gf, radius=8.0):
     return r
 
 
-def get_nx(line):
-    """get_nx: return primal edge network from LineString GeoDataFrame
+def get_primal(line):
+    """get_primal: return primal edge network from LineString GeoDataFrame
 
     args:
       line: LineString GeoDataFrame

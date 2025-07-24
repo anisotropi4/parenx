@@ -12,18 +12,19 @@ from shapely import box, get_coordinates, unary_union
 from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import voronoi_diagram
 
-from .shared import (
-    combine_line,
+from parenx.shared import (
     CRS,
+    combine_line,
     get_base_geojson,
     get_geometry_buffer,
-    get_nx,
+    get_primal,
     get_source_target,
     log,
     set_precision_pointone,
 )
 
 pd.set_option("display.max_columns", None)
+
 
 def get_args():
     """get_args: get command line parameters
@@ -45,17 +46,10 @@ def get_args():
     parser.add_argument("--scale", help="Voronoi scale", type=float, default=5.0)
     parser.add_argument("--buffer", help="line buffer [m]", type=float, default=8.0)
     parser.add_argument(
-        "--tolerance", help="Voronoi snap distance", type=float, default=1.0
+        "--tolerance", help="Voronoi snap distance [m]", type=float, default=1.0
     )
-    args = parser.parse_args()
-    return {
-        "inpath": args.inpath,
-        "outpath": args.outpath,
-        "simplify": args.simplify,
-        "buffer": args.buffer,
-        "scale": args.scale,
-        "tolerance": args.tolerance,
-    }
+    r = parser.parse_args()
+    return vars(r)
 
 
 def get_linestring(line):
@@ -202,7 +196,7 @@ def get_voronoi_line(voronoi, boundary, geometry, buffer_size):
       buffer_size: network buffer distance [m]
 
     returns:
-      simplified simplified network line
+      simplified network line
 
     """
     offset = buffer_size / 2.0
@@ -215,6 +209,30 @@ def get_voronoi_line(voronoi, boundary, geometry, buffer_size):
     r = edge["geometry"].map(get_linestring).explode().to_frame("geometry")
     r = set_geometry(r, square)
     return combine_line(r)
+
+
+def voronoi_frame(this_gs, parameter):
+    """voronoi_frame: use Voronoi polygons to simplify network using
+    parameters passed as dict key pairs
+
+    args:
+      this_gs:     GeoSeries network to simplify
+      parameter:
+        simplify:    tolerance [m]
+        buffer:      network buffer distance [m]
+        scale:       scale distance between edge point to form Voronoi
+        tolerance:   snap Voronoi vertices together if their distance is less than this
+
+    returns:
+      simplified network GeoSeries
+
+    """
+    radius = parameter["buffer"]
+    nx_geometry = get_geometry_buffer(this_gs, radius=radius)
+    nx_boundary = get_geometry_line(nx_geometry)
+    nx_voronoi = get_voronoi(nx_boundary, parameter["tolerance"], parameter["scale"])
+    log("dewhisker")
+    return get_voronoi_line(nx_voronoi, nx_boundary, nx_geometry, radius)
 
 
 def main():
@@ -241,18 +259,19 @@ def main():
     outpath = parameter["outpath"]
     write_dataframe(base_nx, outpath, layer="input")
     log("process\t")
-    radius = parameter["buffer"]
-    nx_geometry = get_geometry_buffer(base_nx["geometry"], radius=radius)
-    nx_boundary = get_geometry_line(nx_geometry)
-    nx_voronoi = get_voronoi(nx_boundary, parameter["tolerance"], parameter["scale"])
-    log("dewhisker")
-    nx_line = get_voronoi_line(nx_voronoi, nx_boundary, nx_geometry, radius)
+    # radius = parameter["buffer"]
+    # nx_geometry = get_geometry_buffer(base_nx["geometry"], radius=radius)
+    # nx_boundary = get_geometry_line(nx_geometry)
+    # nx_voronoi = get_voronoi(nx_boundary, parameter["tolerance"], parameter["scale"])
+    # log("dewhisker")
+    # nx_line = get_voronoi_line(nx_voronoi, nx_boundary, nx_geometry, radius)
+    nx_line = voronoi_frame(base_nx["geometry"], parameter)
     log("write simple")
     simplify = parameter["simplify"]
     if simplify > 0.0:
         nx_line = nx_line.simplify(simplify)
     write_dataframe(nx_line.to_frame("geometry"), outpath, layer="line")
-    nx_edge = get_nx(nx_line)
+    nx_edge = get_primal(nx_line)
     log("write primal")
     write_dataframe(nx_edge.to_frame("geometry"), outpath, layer="primal")
     log("stop\t")

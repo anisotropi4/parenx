@@ -12,20 +12,21 @@ import pandas as pd
 import rasterio as rio
 import rasterio.features as rif
 from pyogrio import write_dataframe
-from shapely import line_interpolate_point, set_precision, snap
+from shapely import line_interpolate_point, snap
 from shapely.affinity import affine_transform
 from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import split
 from skimage.morphology import remove_small_holes, skeletonize
 
-from .shared import (
-    combine_line,
+from parenx.shared import (
     CRS,
+    combine_line,
     get_base_geojson,
     get_geometry_buffer,
-    get_nx,
+    get_primal,
     get_source_target,
     log,
+    set_precision_pointone,
 )
 
 TRANSFORM_ONE = np.asarray([0.0, 1.0, -1.0, 0.0, 1.0, 1.0])
@@ -55,16 +56,7 @@ def get_args():
     parser.add_argument("--scale", help="raster scale", type=float, default=1.0)
     parser.add_argument("--knot", help="keep image knots", action="store_true")
     parser.add_argument("--segment", help="segment", action="store_true")
-    args = parser.parse_args()
-    return {
-        "inpath": args.inpath,
-        "outpath": args.outpath,
-        "tolerance": args.simplify,
-        "buffer": args.buffer,
-        "scale": args.scale,
-        "knot": args.knot,
-        "segment": args.segment,
-    }
+    return vars(parser.parse_args())
 
 
 def get_pxsize(bound, scale=1.0):
@@ -286,7 +278,22 @@ def get_segment_buffer(this_gs, radius):
 
 
 def skeletonize_frame(this_gs, parameter):
-    """skeltonize_frame:"""
+    """skeltonize_frame: use image skeletonization to simplify network with
+    parameters passed as dict key pairs
+
+    args:
+      this_gs:     GeoSeries network to simplify
+      parameter
+        simplify:    tolerance [m]
+        buffer:      line buffer distance [m]
+        scale:       raster scale
+        knot:        keep image knots
+        segment:     segment lines
+
+    returns:
+      simplified network GeoSeries
+
+    """
     radius = parameter["buffer"]
     scale = parameter["scale"]
     if parameter["segment"]:
@@ -298,19 +305,23 @@ def skeletonize_frame(this_gs, parameter):
     skeleton_im = get_skeleton(nx_geometry, r_matrix, out_shape, scale)
     nx_point = get_raster_point(skeleton_im)
     sx_line = get_raster_line(nx_point, parameter["knot"])
-    tolerance = parameter["tolerance"]
+    tolerance = parameter["simplify"]
     return sx_to_nx(sx_line, shapely_transform, simplify=tolerance)
-
-
-set_precision_pointone = partial(set_precision, grid_size=0.1)
 
 
 def main():
     """main: load GeoJSON file, use skeletonize buffer to simplify network, and output
-    input, simplified and primal network as GeoPKG layers
+    simplified and primal network as GeoPKG layers
 
     args:
-       path: GeoJSON filepath
+      parameter
+        inpath:      filepath to input GeoJSON file
+        outpath:     filepath to output GeoPKG file
+        simplify:    tolerance [m]
+        buffer:      line buffer distance [m]
+        scale:       raster scale
+        knot:        keep image knots
+        segment:     segment lines
 
     returns:
        None
@@ -327,7 +338,7 @@ def main():
     log("write simple")
     write_dataframe(nx_line, outpath, "line")
     log("write primal")
-    mx_line = get_nx(nx_line["geometry"]).to_frame("geometry")
+    mx_line = get_primal(nx_line["geometry"]).to_frame("geometry")
     write_dataframe(mx_line, outpath, "primal")
     log("stop\t")
 

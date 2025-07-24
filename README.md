@@ -59,6 +59,10 @@ skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletoniz
 ```
 
 
+```bash
+tile_skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletonized_tile.gpkg
+```
+
 ### Voronoi
 The following creates a simplified network by creating set of Voronoi polygons from points on the buffer in `output.gpkg`
 <!--    
@@ -82,6 +86,29 @@ To copy the `run.sh` script into your local directory the following could help
 
     $ find . -name run.sh -exec cp {} . \;
 
+
+## Application Programming Interface (API) Example
+
+The `skeletonize_frame`, `voronoi_frame`, `primal_frame` and `tile_skeletonize_frame` functions are exposed via a simple API.
+
+```python
+#!/usr/bin/env python3
+
+import geopandas as gp
+from parenx import skeletonize_frame, voronoi_frame, skeletonize_tiles, get_primal
+
+CRS = "EPSG:27700"
+filepath = "data/rnet_princes_street.geojson"
+frame = gp.read_file(filepath).to_crs(CRS)
+
+parameter = {"simplify": 0.0, "buffer": 8.0, "scale": 1.0, "knot": False, "segment": False}
+r = skeletonize_frame(frame["geometry"], parameter)
+
+parameter = {"simplify": 0.0, "scale": 5.0, "buffer": 8.0, "tolerance": 1.0}
+r = voronoi_frame(frame["geometry"], parameter)
+
+primal = get_primal(r)
+```
 
 ## Notes
 Both are the skeletonization and Voronoi approach are generic approaches, with the following known issues:
