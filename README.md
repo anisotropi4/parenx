@@ -34,14 +34,9 @@ python -c "import parenx; print(parenx.__version__)"
 
 ## Examples
 
-A `bash` helper script `run.sh` and example data is available under the `sitepackage` project directory under `venv`. The exact path varies with module and `python` version
+A `bash` helper script `run.sh` and example data is available under the `sitepackages/parenx` project directory under `venv`. The exact path varies with module and `python` version
 
-### Skeletonization
-The following creates a simplified network by applying skeletonization to a buffered raster array in `output.gpkg`
-<!--     
-    (venv) $ ./skeletonize.py data/rnet_princes_street.geojson
-    -->
-
+### Example data
 ```bash
 # Download the data if not already present
 if [ ! -f ./data/rnet_princes_street.geojson ]; then
@@ -54,6 +49,12 @@ if [ ! -f ./data/rnet_princes_street.geojson ]; then
 fi
 ```
 
+### Skeletonization
+The following creates a simplified network by applying skeletonization to a buffered raster array in `output.gpkg`
+<!--
+    (venv) $ ./skeletonize.py data/rnet_princes_street.geojson
+    -->
+
 ```bash
 skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletonized.gpkg
 ```
@@ -65,7 +66,7 @@ tile_skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skele
 
 ### Voronoi
 The following creates a simplified network by creating set of Voronoi polygons from points on the buffer in `output.gpkg`
-<!--    
+<!--
     (venv) $ ./voronoi.py data/rnet_princes_street.geojson -->
 
 ```bash
@@ -78,7 +79,7 @@ The `run.sh` script sets a python virtual environment and executes the script ag
     $ ./run.sh
 
 The `run.sh` script optionally takes a filename and file-extension. To simplify a file, say `somewhere.geojson` and output to `GeoPKG` files `sk-simple.gpkg` and `vr-simple.gpkg`
-    
+
     $ ./run.sh somewhere.geojon simple
 
 ### Locating the `run.sh` script
@@ -86,6 +87,23 @@ To copy the `run.sh` script into your local directory the following could help
 
     $ find . -name run.sh -exec cp {} . \;
 
+## Using the `parenx` helper script
+
+A `dash` helper script `parenx` is also available under the `sitepackages/parenx` project directory under `venv`. The exact path varies with module and `python` version
+
+### Locating the `parenx` script
+To copy the `parenx` script into your local directory the following could help
+
+    $ find . -name parenx -type f -exec cp {} . \;
+
+### Simplification using different algorithms
+The `parenx` helper script allows the algorithm to be selected as a command line parameter for the three supported algorithms:
+
+```bash
+./parenx skeletonize ./data/rnet_princes_street.geojson rnet_princes_street_skeltonize.gpkg
+./parenx tile_skeletonize ./data/rnet_princes_street.geojson rnet_princes_street_tile.gpkg
+./parenx voronoi ./data/rnet_princes_street.geojson rnet_princes_street_voronoi.gpkg
+```
 
 ## Application Programming Interface (API) Example
 

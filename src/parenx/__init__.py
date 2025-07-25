@@ -1,6 +1,6 @@
 # parenx/__init__.py
 """parenx: package initialization"""
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 __author__ = "Will Deakin"
 PACKAGE_NAME = "parenx"
 
