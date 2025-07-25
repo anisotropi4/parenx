@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# parenx: wrapper to call skeletonize, tile_skeletonize.py or voronoi.py
+
+die() {
+	echo >&2 "$@"
+	exit 1
+}
+
+[ "$#" -ge 2 ] || die "parenx: at least two arguments required [algorithm] [input]"
+OPTION=$1
+shift
+
+case "$OPTION" in
+    skeletonize ) skeletonize.py $@ ;;
+    tile_skeletonize ) tile_skeletonize.py $@ ;;
+    voronoi ) voronoi.py $@ ;;
+esac
