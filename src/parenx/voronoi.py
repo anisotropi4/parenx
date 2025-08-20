@@ -176,7 +176,7 @@ def set_geometry(line, square):
     """
     r = line.reset_index(drop=True)
     centroid = square.centroid.map(set_precision_pointone).set_crs(CRS)
-    edge, node = get_source_target(r)
+    edge, node = get_source_target(r["geometry"])
     ix = node["geometry"].sindex.query(square, predicate="contains_properly")
     node.loc[ix[1], "geometry"] = centroid[ix[0]].values
     source = node.loc[edge["source"], "geometry"].values
