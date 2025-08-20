@@ -205,7 +205,7 @@ def get_raster_line(point, knot=False):
     r = gp.GeoSeries(map(LineString, s), crs=CRS)
     if r.empty:
         return gp.GeoSeries(EMPTY, crs=CRS)
-    edge, node = get_source_target(combine_line(r).to_frame("geometry"))
+    edge, node = get_source_target(combine_line(r))
     if knot:
         return combine_line(edge["geometry"])
     ix = edge.length > 2.0

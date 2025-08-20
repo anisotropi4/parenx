@@ -142,7 +142,7 @@ def filter_distance(line, boundary, offset):
     returns:
       simplified LineStrings
     """
-    edge, _ = get_source_target(line.to_frame("geometry"))
+    edge, _ = get_source_target(line)
     (ix, _), distance = boundary.sindex.nearest(edge["geometry"], return_distance=True)
     _, ix = np.unique(ix, return_index=True)
     ix = distance[ix] > offset
@@ -202,7 +202,7 @@ def get_voronoi_line(voronoi, boundary, geometry, buffer_size):
     offset = buffer_size / 2.0
     r = filter_distance(voronoi, boundary, offset)
     r = filter_buffer(r, geometry)
-    edge, node = get_source_target(r.to_frame("geometry"))
+    edge, node = get_source_target(r)
     ix = node["count"] < 4
     square = node[ix].buffer(offset, cap_style="square", mitre_limit=offset)
     square = gp.GeoSeries(unary_union(square.values).geoms, crs=CRS)
