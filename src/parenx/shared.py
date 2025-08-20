@@ -5,7 +5,7 @@ from functools import partial
 
 import geopandas as gp
 import numpy as np
-from pyogrio import read_dataframe
+import pandas as pd
 from shapely import get_coordinates, line_merge, set_precision, unary_union
 from shapely.geometry import LineString, MultiLineString, Point
 
@@ -42,7 +42,7 @@ def get_base_geojson(filepath):
       GeoDataFrame at 0.1m precision
 
     """
-    r = read_dataframe(filepath).to_crs(CRS)
+    r = gp.read_file(filepath).to_crs(CRS)
     r["geometry"] = r["geometry"].map(set_precision_pointone)
     return r
 
@@ -114,17 +114,34 @@ def get_source_target(line):
       edge, node: GeoDataFrames
 
     """
+    r = line.map(get_coordinates).explode()
+    ix = r.index.duplicated(keep="last") & r.index.duplicated(keep="first")
+    r = gp.points_from_xy(*np.stack(r[~ix]).reshape(-1, 2).T)
+    node = pd.Series(r).to_frame("geometry")
+    node = node.groupby("geometry").size().rename("count").reset_index()
+    node["node"] = node.index
+    node = gp.GeoDataFrame(node, crs=CRS)
+
     edge = line.copy()
-    r = edge["geometry"].map(get_end)
-    r = np.stack(r)
-    node = gp.GeoSeries(map(Point, r.reshape(-1, 2)), crs=CRS).to_frame("geometry")
-    count = node.groupby("geometry").size().rename("count")
-    node = node.drop_duplicates("geometry").set_index("geometry", drop=False)
-    node = node.join(count).reset_index(drop=True).reset_index(names="node")
-    ix = node.set_index("geometry")["node"]
-    edge = edge.reset_index(names="edge")
-    edge["source"] = ix.loc[map(Point, r[:, 0])].values
-    edge["target"] = ix.loc[map(Point, r[:, 1])].values
+    try:
+        edge = edge.to_frame("geometry")
+    except AttributeError:
+        pass
+    edge = edge.rename_axis("edge").reset_index()
+
+    r = np.asarray(r).reshape(-1, 2)
+    i, j = node["geometry"].sindex.nearest(r[:, 0], return_all=False)
+    edge["source"] = -1
+    edge.iloc[i, -1] = j
+
+    i, j = node["geometry"].sindex.nearest(r[:, 1], return_all=False)
+    edge["target"] = -1
+    edge.iloc[i, -1] = j
+
+    column = ["source", "target"]
+    edge[column] = np.sort(edge[column], axis=1)
+    edge = edge.drop_duplicates(subset=column).reset_index(drop=True)
+    edge["edge"] = edge.index
     return edge, node
 
 
