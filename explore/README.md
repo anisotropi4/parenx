@@ -148,3 +148,42 @@ output at all, and both the old and the new code lose those. And the 16 m rule i
 a geometric proxy for the raster short-link filter rather than a proof of what the
 raster did. The agreement is exact on both circles, 81 of 81 and 134 of 134, which
 is why it counts as an explanation rather than a coincidence.
+
+## Verified: the strip-wise rasteriser, with one honest exception
+
+The second pass replaced the single `rasterio.features.rasterize` call with
+strip-wise rasterising, 256 rows at a time, because the single call was scaling at
+roughly the cube of the radius (0.10 s at 1 km, 5.5 s at 5 km: GDAL scans every
+polygon edge on every row of the polygon's bounding box). The agent claimed the
+raster was identical on all five datasets. `bench/check_raster_parity.py` compares
+the two calls directly, and it is 8 of 9 comparisons identical, not 9 of 9:
+
+| dataset | scale | differing pixels | foreground old / new |
+|---|---|---|---|
+| princes_street | 1.0 | 0 | 604,548 / 604,548 |
+| doncaster_rail | 1.0 | 0 | 1,456,108 / 1,456,108 |
+| leeds_1km | 1.0 | 0 | 1,294,748 / 1,294,748 |
+| **leeds_3km** | **1.0** | **62** | **10,399,537 / 10,399,599** |
+| leeds_5km | 1.0 | 0 | 23,900,051 / 23,900,051 |
+| princes_street | 2.0 | 0 | 2,418,246 / 2,418,246 |
+| doncaster_rail | 2.0 | 0 | 5,824,672 / 5,824,672 |
+| leeds_1km | 2.0 | 0 | 5,179,643 / 5,179,643 |
+
+So "the raster is unchanged" is not exactly true: 62 pixels of 10.4 million differ
+on one dataset, which means a polygon edge that crosses a strip boundary can land
+on the other side of a pixel centre. The claim about the mechanism, that strip
+edges lie on pixel edges, is therefore incomplete.
+
+Its effect was measured rather than argued. Running `leeds_3km` at the default with
+a strip height of 256 against a strip height of a million, which degenerates to the
+old single call:
+
+| strip height | lines | vertices | km | components | degree-3+ |
+|---|---|---|---|---|---|
+| 256 (new default) | 14,047 | 52,258 | 631.512 | 82 | 8,076 |
+| 1,000,000 (old behaviour) | 14,047 | 52,257 | 631.512 | 82 | 8,076 |
+
+One vertex. No change in line count, length, components or junctions. So the
+parity claim should be softened to "one vertex difference across these inputs
+because of a strip-boundary pixel rule", not "identical", and the speed win stands
+on its own: the 5 km rasterise went from 5.5 s to 1.0 s.
