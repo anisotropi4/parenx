@@ -11,7 +11,7 @@ from pyogrio import write_dataframe
 from shapely import STRtree, box, clip_by_rect, disjoint, voronoi_polygons
 from shapely.geometry import LineString, MultiPoint
 
-from parenx.skeletonize import skeletonize_frame
+from parenx.skeletonize import get_tolerance, simplify_network, skeletonize_frame
 
 from parenx.shared import (
     CRS,
@@ -42,11 +42,21 @@ def get_args():
         help="GeoGPKG output path",
         default="output.gpkg",
     )
-    parser.add_argument("--simplify", help="tolerance [m]", type=float, default=0.0)
+    parser.add_argument(
+        "--simplify",
+        help="line simplify tolerance [m], default one pixel 1 / scale, 0 for none."
+        " Knots and short spurs are still removed unless --knot is set",
+        type=float,
+        default=None,
+    )
     parser.add_argument("--buffer", help="line buffer [m]", type=float, default=8.0)
     parser.add_argument("--length", help="square size [m]", type=float, default=2000.0)
     parser.add_argument("--scale", help="raster scale", type=float, default=1.0)
-    parser.add_argument("--knot", help="keep image knots", action="store_true")
+    parser.add_argument(
+        "--knot",
+        help="keep image knots and short spurs",
+        action="store_true",
+    )
     parser.add_argument("--segment", help="segment", action="store_true")
     return vars(parser.parse_args())
 
@@ -114,10 +124,14 @@ def skeletonize_tiles(this_nx, parameter):
 
     args:
       parameter
+        simplify:    line simplify tolerance [m], missing or None for one pixel
+                     1 / scale, 0.0 for none. This controls polyline
+                     simplification only
         buffer:      line buffer distance [m]
         length:      square edge size [m]
         scale:       raster scale
-        knot:        keep image knots
+        knot:        keep image knots. If False, knots and short spurs are
+                     removed whatever the simplify value
         segment:     segment lines
 
     returns:
@@ -148,8 +162,7 @@ def skeletonize_tiles(this_nx, parameter):
     s = get_gap_fill(r, square, radius)
     r = pd.concat([r, s])
     r = combine_line(r["geometry"]).to_frame("geometry")
-    tolerance = parameter["simplify"]
-    r["geometry"] = r.simplify(tolerance)
+    r["geometry"] = simplify_network(r["geometry"], get_tolerance(parameter))
     return r
 
 

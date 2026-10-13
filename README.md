@@ -59,6 +59,8 @@ The following creates a simplified network by applying skeletonization to a buff
 skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletonized.gpkg
 ```
 
+The skeleton is traced on whole raster pixels, so the `line` layer is simplified by default with a tolerance of one pixel, `1 / scale` metres (1 m at the default `--scale 1`). The skeleton of an even-width buffer can sit on either of two centre pixels, so its position is only known to one pixel. This tolerance removes the one-pixel staircase jogs and gives a vertex density close to OS Open Roads on central Leeds. Line end-points are kept exact and the network is simplified as a whole so lines cannot cross, which leaves the network topology unchanged. Use `--simplify N` for a tolerance of `N` metres, or `--simplify 0` to turn line simplification off. `--simplify` controls polyline simplification only. Unless `--knot` is passed, knots of short skeleton chains are still collapsed to a single hub and short spurs are still dropped, whatever the `--simplify` value. The strictly lossless output, the pixel skeleton with only exactly collinear vertices dropped, is `--simplify 0 --knot`. This default applies to `skeletonize.py` and `tile_skeletonize.py`. `voronoi.py` keeps its own default of 0.
+
 
 ```bash
 tile_skeletonize.py ./data/rnet_princes_street.geojson rnet_princes_street_skeletonized_tile.gpkg
@@ -119,7 +121,10 @@ CRS = "EPSG:27700"
 filepath = "data/rnet_princes_street.geojson"
 frame = gp.read_file(filepath).to_crs(CRS)
 
-parameter = {"simplify": 0.0, "buffer": 8.0, "scale": 1.0, "knot": False, "segment": False}
+# "simplify": None, or no "simplify" key, uses the default of 1 / scale metres
+# "simplify": 0.0 turns line simplification off, knots and short spurs are
+# still removed unless "knot" is True
+parameter = {"simplify": None, "buffer": 8.0, "scale": 1.0, "knot": False, "segment": False}
 r = skeletonize_frame(frame["geometry"], parameter)
 
 parameter = {"simplify": 0.0, "scale": 5.0, "buffer": 8.0, "tolerance": 1.0}

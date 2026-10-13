@@ -18,7 +18,8 @@ dependencies = [
   "pyogrio",
   "rasterio",
   "shapely",
-  "scikit-image"
+  "scikit-image",
+  "scipy"
 ]
 [project.scripts]
 "skeletonize.py" = "parenx.skeletonize:main"
