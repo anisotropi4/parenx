@@ -114,6 +114,8 @@ def get_source_target(line):
       edge, node: GeoDataFrames
 
     """
+    if isinstance(line, pd.DataFrame):
+        line = line["geometry"]
     r = line.map(get_coordinates).explode()
     ix = r.index.duplicated(keep="last") & r.index.duplicated(keep="first")
     r = gp.points_from_xy(*np.stack(r[~ix]).reshape(-1, 2).T)
