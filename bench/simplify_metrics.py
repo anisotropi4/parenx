@@ -187,7 +187,7 @@ def freeze():
     return baseline
 
 
-def check():
+def check(simplify=0.0):
     """measure the current tree and diff against the frozen baseline"""
     from parenx.skeletonize import skeletonize_frame
 
@@ -196,7 +196,7 @@ def check():
     for name, filename in DATASETS.items():
         source = gp.read_file(os.path.join(DATA, filename)).to_crs(CRS)
         parameter = {
-            "simplify": 0.0,
+            "simplify": simplify,
             "buffer": 8.0,
             "scale": 1.0,
             "knot": False,
@@ -224,6 +224,8 @@ def main():
         freeze()
     elif mode == "check":
         check()
+    elif mode == "check-default":
+        check(simplify=None)
     elif mode == "metrics":
         rows = []
         for path in sys.argv[2:]:
