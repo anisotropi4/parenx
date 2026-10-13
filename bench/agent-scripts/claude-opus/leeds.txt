@@ -1,0 +1,17 @@
+read                 wall    0.55s cpu    0.55s
+lines 22953 vertices 134806 length_km 2196.4
+buffer_union         wall    8.26s cpu    8.24s
+raster shape [12008 12011] Mpx 144.228088
+rasterize            wall   14.90s cpu   14.85s
+fg px 31139018 fill 0.2159
+remove_holes         wall    3.02s cpu    3.01s
+skeletonize          wall    8.32s cpu    8.30s
+skeleton px 1726793
+raster_point         wall    5.57s cpu    5.47s
+raster_line          wall   30.90s cpu   30.85s
+sx_to_nx             wall    1.11s cpu    1.11s
+out lines 36284 out vertices 1775166 out km 1984.4
+maxrss MB 4954.6953125
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:15.11
+	Maximum resident set size (kbytes): 5073608
+	File system outputs: 0
