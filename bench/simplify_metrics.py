@@ -31,6 +31,9 @@ CRS = "EPSG:27700"
 DATASETS = {
     "princes_street": "rnet_princes_street.geojson",
     "doncaster_rail": "rnet_doncaster_rail.geojson",
+    "leeds_1km": "leeds_1km.geojson",
+    "leeds_3km": "leeds_3km.geojson",
+    "leeds_5km": "leeds_5km.geojson",
 }
 
 

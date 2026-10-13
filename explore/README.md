@@ -59,3 +59,62 @@ Checked by the parent agent on this machine, not taken from the notes:
   road selection merges to 6,368 links and, at 10 m simplification, 18,599
   vertices and 1,156 KB, which is 1.34 percent of the source bytes. Merge plus
   selection took 0.11 s of CPU. This confirms the agents' London figures.
+
+## Growing-extent test circles, and what a good result looks like
+
+`bench/make_leeds_buffers.py` generates both sets, centred on 430367, 433604
+(EPSG:27700), the vertex centre of gravity of the Leeds network, about 170 m from
+Briggate. It writes them into `data/`, and they are gitignored because they are
+regenerable in about forty seconds:
+
+```bash
+.venv/bin/python bench/make_leeds_buffers.py
+```
+
+Inputs, clipped from `data/osm_leeds.geojson`:
+
+| dataset | lines | vertices | km | verts/km |
+|---|---|---|---|---|
+| `data/leeds_1km.geojson` | 1,979 | 10,142 | 104.2 | 97.3 |
+| `data/leeds_3km.geojson` | 9,672 | 50,679 | 764.7 | 66.3 |
+| `data/leeds_5km.geojson` | 18,530 | 105,559 | 1,698.8 | 62.1 |
+
+References, clipped from the same circles out of the OS Open Roads layer
+`open_roads_leeds` in `/mnt/secondary/data/bronze/os/openroads/oproad_gb_2025-12.gpkg`.
+Open Roads is the OS's own straightened junction-to-junction network, so its
+density is the empirical target for "what a simplified network looks like":
+
+| reference | lines | vertices | km | verts/km |
+|---|---|---|---|---|
+| `data/openroads_leeds_1km.geojson` | 1,007 | 5,288 | 64.2 | 82.34 |
+| `data/openroads_leeds_3km.geojson` | 7,698 | 35,265 | 507.4 | 69.50 |
+| `data/openroads_leeds_5km.geojson` | 15,397 | 72,056 | 1,130.0 | 63.76 |
+
+Use it as a density target, not a length target: Open Roads is roads only, so it
+is about 38 percent shorter inside the same circle than the OSM extract, which
+also carries footways, paths and cycleways.
+
+The established way to clip Open Roads in this ecosystem is the `openroadsget`
+Rust binary used by `csis` (`openroadsget links|junctions -g <gpkg> --bbox <bng
+box>` from `~/github/robinlovelace/csis/_targets.R`), with a Python `gpkg_bbox`
+helper for other layers. `bench/make_leeds_buffers.py` does the geopandas
+equivalent, which is enough for circles this size.
+
+## The frozen baseline on all five datasets
+
+`bench/reference/baseline.json` records the original implementation's output on
+all five. On the circles it is 12 to 14 times denser in vertices than its input:
+
+| dataset | output lines | vertices | verts/km | components | degree-3+ | within 2 m |
+|---|---|---|---|---|---|---|
+| `princes_street` | 547 | 33,225 | 894.3 | 2 | 312 | 0.8216 |
+| `doncaster_rail` | 173 | 48,824 | 842.6 | 1 | 98 | 0.8690 |
+| `leeds_1km` | 1,740 | 69,067 | 918.1 | 29 | 969 | 0.7408 |
+| `leeds_3km` | 13,983 | 592,569 | 897.6 | 87 | 7,896 | 0.8287 |
+| `leeds_5km` | 28,916 | 1,360,918 | 893.7 | 142 | 16,147 | 0.8485 |
+
+The large reference GeoPackages under `bench/reference/` (1.6, 12.7 and 28.9 MB)
+are gitignored for the same reason; the JSON carries the numbers. Refreezing
+reproduces the two small datasets' metrics exactly, though the GeoPackage bytes
+themselves are not stable between runs (container metadata), so compare metrics,
+not hashes.

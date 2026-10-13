@@ -44,6 +44,141 @@
       "verts_per_km": 57.0
     }
   },
+  "leeds_1km": {
+    "current_line": {
+      "components": 29,
+      "cycle_rank": 293,
+      "degree1": 478,
+      "degree2": 29,
+      "degree3plus": 969,
+      "km": 75.228,
+      "lines": 1740,
+      "name": "leeds_1km:current_line",
+      "nodes": 1476,
+      "vertices": 69067,
+      "verts_per_km": 918.1,
+      "within_1.0m": 0.5285,
+      "within_16.0m": 0.9999,
+      "within_2.0m": 0.7408,
+      "within_5.0m": 0.9383
+    },
+    "input": {
+      "components": 661,
+      "cycle_rank": 157,
+      "degree1": 1540,
+      "degree2": 541,
+      "degree3plus": 402,
+      "km": 104.206,
+      "lines": 1979,
+      "name": "leeds_1km:input",
+      "nodes": 2483,
+      "vertices": 10142,
+      "verts_per_km": 97.3
+    },
+    "input_noded": {
+      "components": 67,
+      "cycle_rank": 695,
+      "degree1": 715,
+      "degree2": 52,
+      "degree3plus": 1482,
+      "km": 104.206,
+      "lines": 2877,
+      "name": "leeds_1km:input_noded",
+      "nodes": 2249,
+      "vertices": 11088,
+      "verts_per_km": 106.4
+    }
+  },
+  "leeds_3km": {
+    "current_line": {
+      "components": 87,
+      "cycle_rank": 2688,
+      "degree1": 3204,
+      "degree2": 282,
+      "degree3plus": 7896,
+      "km": 660.149,
+      "lines": 13983,
+      "name": "leeds_3km:current_line",
+      "nodes": 11382,
+      "vertices": 592569,
+      "verts_per_km": 897.6,
+      "within_1.0m": 0.6012,
+      "within_16.0m": 0.9999,
+      "within_2.0m": 0.8287,
+      "within_5.0m": 0.9567
+    },
+    "input": {
+      "components": 4762,
+      "cycle_rank": 537,
+      "degree1": 10279,
+      "degree2": 2174,
+      "degree3plus": 1444,
+      "km": 764.728,
+      "lines": 9672,
+      "name": "leeds_3km:input",
+      "nodes": 13897,
+      "vertices": 50679,
+      "verts_per_km": 66.3
+    },
+    "input_noded": {
+      "components": 170,
+      "cycle_rank": 3829,
+      "degree1": 3778,
+      "degree2": 289,
+      "degree3plus": 9041,
+      "km": 764.728,
+      "lines": 16767,
+      "name": "leeds_3km:input_noded",
+      "nodes": 13108,
+      "vertices": 57960,
+      "verts_per_km": 75.8
+    }
+  },
+  "leeds_5km": {
+    "current_line": {
+      "components": 142,
+      "cycle_rank": 5127,
+      "degree1": 7170,
+      "degree2": 614,
+      "degree3plus": 16147,
+      "km": 1522.859,
+      "lines": 28916,
+      "name": "leeds_5km:current_line",
+      "nodes": 23931,
+      "vertices": 1360918,
+      "verts_per_km": 893.7,
+      "within_1.0m": 0.6679,
+      "within_16.0m": 1.0,
+      "within_2.0m": 0.8485,
+      "within_5.0m": 0.959
+    },
+    "input": {
+      "components": 10150,
+      "cycle_rank": 963,
+      "degree1": 21479,
+      "degree2": 3787,
+      "degree3plus": 2451,
+      "km": 1698.773,
+      "lines": 18530,
+      "name": "leeds_5km:input",
+      "nodes": 27717,
+      "vertices": 105559,
+      "verts_per_km": 62.1
+    },
+    "input_noded": {
+      "components": 275,
+      "cycle_rank": 7010,
+      "degree1": 7957,
+      "degree2": 673,
+      "degree3plus": 17723,
+      "km": 1698.773,
+      "lines": 33088,
+      "name": "leeds_5km:input_noded",
+      "nodes": 26353,
+      "vertices": 120319,
+      "verts_per_km": 70.8
+    }
+  },
   "princes_street": {
     "current_line": {
       "components": 2,
