@@ -49,7 +49,8 @@ pts = run("px->Shapely Points", lambda: get_raster_point(skel))
 line = run("px->lines(squares+query)", lambda: get_raster_line(pts, False))
 sh = partial(affine_transform, matrix=sm)
 out = run("transform+precision", lambda: sx_to_nx(line, sh, simplify=0.0))
-run("get_primal", lambda: get_primal(out))
+# NOTE: get_primal takes a GeoSeries of lines, not the GeoDataFrame sx_to_nx returns.
+run("get_primal", lambda: get_primal(out["geometry"]))
 
 w = sum(r[1] for r in rows)
 c = sum(r[2] for r in rows)
