@@ -1,0 +1,92 @@
+{
+  "doncaster_rail": {
+    "current_line": {
+      "components": 1,
+      "cycle_rank": 33,
+      "degree1": 39,
+      "degree2": 4,
+      "degree3plus": 98,
+      "km": 57.947,
+      "lines": 173,
+      "name": "doncaster_rail:current_line",
+      "nodes": 141,
+      "vertices": 48824,
+      "verts_per_km": 842.6,
+      "within_1.0m": 0.6792,
+      "within_16.0m": 1.0,
+      "within_2.0m": 0.869,
+      "within_5.0m": 0.9812
+    },
+    "input": {
+      "components": 23,
+      "cycle_rank": 128,
+      "degree1": 190,
+      "degree2": 20,
+      "degree3plus": 378,
+      "km": 234.451,
+      "lines": 693,
+      "name": "doncaster_rail:input",
+      "nodes": 588,
+      "vertices": 11728,
+      "verts_per_km": 50.0
+    },
+    "input_noded": {
+      "components": 3,
+      "cycle_rank": 530,
+      "degree1": 189,
+      "degree2": 198,
+      "degree3plus": 604,
+      "km": 234.444,
+      "lines": 1518,
+      "name": "doncaster_rail:input_noded",
+      "nodes": 991,
+      "vertices": 13354,
+      "verts_per_km": 57.0
+    }
+  },
+  "princes_street": {
+    "current_line": {
+      "components": 2,
+      "cycle_rank": 121,
+      "degree1": 93,
+      "degree2": 23,
+      "degree3plus": 312,
+      "km": 37.15,
+      "lines": 547,
+      "name": "princes_street:current_line",
+      "nodes": 428,
+      "vertices": 33225,
+      "verts_per_km": 894.3,
+      "within_1.0m": 0.6379,
+      "within_16.0m": 1.0,
+      "within_2.0m": 0.8216,
+      "within_5.0m": 0.9512
+    },
+    "input": {
+      "components": 4,
+      "cycle_rank": 314,
+      "degree1": 66,
+      "degree2": 236,
+      "degree3plus": 532,
+      "km": 49.376,
+      "lines": 1144,
+      "name": "princes_street:input",
+      "nodes": 834,
+      "vertices": 4603,
+      "verts_per_km": 93.2
+    },
+    "input_noded": {
+      "components": 2,
+      "cycle_rank": 341,
+      "degree1": 62,
+      "degree2": 67,
+      "degree3plus": 496,
+      "km": 49.376,
+      "lines": 964,
+      "name": "princes_street:input_noded",
+      "nodes": 625,
+      "vertices": 4447,
+      "verts_per_km": 90.1
+    }
+  }
+}
