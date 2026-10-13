@@ -118,3 +118,33 @@ are gitignored for the same reason; the JSON carries the numbers. Refreezing
 reproduces the two small datasets' metrics exactly, though the GeoPackage bytes
 themselves are not stable between runs (container metadata), so compare metrics,
 not hashes.
+
+## The component counts: the new code merges, and the old code was splitting
+
+The first implementation pass reduced the component count on the two larger
+circles (87 to 81 on 3 km, 142 to 134 on 5 km). That is a fix, not a regression,
+and `bench/component_provenance.py` shows it: cluster the *old* output's
+components with the buffer merge distance of 16 m, because an 8 m buffer joins
+anything closer than that, so two pieces inside 16 m of each other sit in one
+buffered polygon and its skeleton should be one component.
+
+| dataset | buffered polygons | old components | old clustered at 16 m | new components |
+|---|---|---|---|---|
+| princes_street | 2 | 2 | 2 | 2 |
+| doncaster_rail | 1 | 1 | 1 | 1 |
+| leeds_1km | 32 | 29 | 29 | 29 |
+| leeds_3km | 92 | 87 | **81** | **81** |
+| leeds_5km | 147 | 142 | **134** | **134** |
+
+The old output had 6 and 8 pieces that were within 16 m of another component,
+which is to say inside one buffered polygon, emitted as separate components: the
+old `<= 2 px` length filter dropped short connector links and split the
+component. The new code keeps short junction links and merges them through
+degree-2 chains, so it lands exactly on the 16 m clustering.
+
+Caveats, stated plainly: the buffered polygon count is an upper bound, not the
+answer, because a buffered island whose skeleton is shorter than 2 m produces no
+output at all, and both the old and the new code lose those. And the 16 m rule is
+a geometric proxy for the raster short-link filter rather than a proof of what the
+raster did. The agreement is exact on both circles, 81 of 81 and 134 of 134, which
+is why it counts as an explanation rather than a coincidence.
